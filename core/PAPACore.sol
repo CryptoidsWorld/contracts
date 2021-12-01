@@ -14,6 +14,12 @@ contract PAPACore is ERC721Enumerable, AccessControl, Ownable, Pausable {
     uint256 bornAt;
   }
 
+  address public crossMiner;
+  modifier isCrossMiner {
+    require(msg.sender == crossMiner);
+    _;
+  }
+
   mapping(uint256 => papaMeta) public papaes;
   uint256 public immutable maxSupply;
   string public baseURI;
@@ -68,7 +74,6 @@ contract PAPACore is ERC721Enumerable, AccessControl, Ownable, Pausable {
   {
     require(_exists(_petId), "papa: pet does not exists!");
     papaMeta storage papa = papaes[_petId];
-    require(papa.bornAt == 0, "papa: already evolved!");
     papa.genes1 = _genes1;
     papa.genes2 = _genes2;
     emit PAPAEvolved(_petId, _genes1, _genes2);
@@ -115,5 +120,19 @@ contract PAPACore is ERC721Enumerable, AccessControl, Ownable, Pausable {
 
   function unpause() external onlyOwner {
     _unpause();
+  }
+
+  function setCrossMiner(address _miner) external onlyOwner {
+    crossMiner = _miner;
+  }
+
+  function crossMint(address _to, uint256 _id) external isCrossMiner {
+    require(_exists(_id));
+    _transfer(ownerOf(_id), _to, _id);
+  }
+
+  function deposit(uint256 _id) external {
+    require(ownerOf(_id) == msg.sender);
+    _transfer(msg.sender, address(this), _id);
   }
 }

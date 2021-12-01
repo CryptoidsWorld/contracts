@@ -24,7 +24,6 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
 
   address public EVOLVE_ADMIN;
   bytes32 public constant EVOLVE_TYPEHASH = keccak256('Evolve(uint256 id,uint256 genes1,uint256 genes2)');
-  bytes32 public constant EVOLVE_ROLE = keccak256("EVOLVE_ROLE");
 
   uint256 public nextId;
   uint256 constant MAX_BREED_TIMES = 7;

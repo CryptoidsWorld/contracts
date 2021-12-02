@@ -2,33 +2,33 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-contract PAPACore is ERC721Enumerable, AccessControl, Ownable, Pausable {
+contract PAPACore is ERC721Enumerable, AccessControl, Pausable, ERC721Holder {
   struct papaMeta {
     uint256 genes1;
     uint256 genes2;
     uint256 bornAt;
   }
 
-  address public crossMiner;
-  modifier isCrossMiner {
-    require(msg.sender == crossMiner);
-    _;
-  }
 
   mapping(uint256 => papaMeta) public papaes;
   uint256 public immutable maxSupply;
   string public baseURI;
 
+  address public CROSS_MINER;
+  address public EVOLVE_ADMIN;
   bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
-  bytes32 constant EVOLVE_ROLE = keccak256("EVOLVE_ROLE");
 
   event PAPASpawned(uint256 indexed petId, address indexed owner, uint32 indexed source);
   event PAPAEvolved(uint256 indexed petId, uint256 genes1, uint256 genes2);
+  event CrossChain(address indexed receiver, uint256 indexed petId);
+  event DepositCross(address indexed sender, uint256 indexed petId);
+  event NewEvolveAdmin(address indexed admin);
+  event NewCrossMiner(address indexed newCrossMiner);
 
   constructor() ERC721("PAPA Master", "PAPA") {
     maxSupply = 1000000;
@@ -63,15 +63,25 @@ contract PAPACore is ERC721Enumerable, AccessControl, Ownable, Pausable {
     emit PAPASpawned(_petId, _to, _source);
   }
 
+  function setEvolveAdmin(
+    address _admin
+  )
+    external 
+    onlyRole(DEFAULT_ADMIN_ROLE) 
+  {
+    EVOLVE_ADMIN = _admin;
+    emit NewEvolveAdmin(_admin);
+  }
+
   function evolvePAPA(
     uint256 _petId,
     uint256 _genes1,
     uint256 _genes2
   )
     external
-    onlyRole(EVOLVE_ROLE)
     whenNotPaused
   {
+    require(msg.sender == EVOLVE_ADMIN, "papa: no access");
     require(_exists(_petId), "papa: pet does not exists!");
     papaMeta storage papa = papaes[_petId];
     papa.genes1 = _genes1;
@@ -101,7 +111,13 @@ contract PAPACore is ERC721Enumerable, AccessControl, Ownable, Pausable {
     return (values, _cursor + length);
   }
 
-  function getMetaInfo(uint256 _petId) external view returns (uint256, uint256, uint256) {
+  function getMetaInfo(
+    uint256 _petId
+  ) 
+    external 
+    view 
+    returns (uint256, uint256, uint256) 
+  {
     papaMeta memory papa = papaes[_petId];
     return (papa.genes1, papa.genes2, papa.bornAt);
   }
@@ -110,29 +126,69 @@ contract PAPACore is ERC721Enumerable, AccessControl, Ownable, Pausable {
     return baseURI;
   }
 
-  function setBaseURI(string memory _uri) external onlyOwner whenNotPaused {
+  function setBaseURI(
+    string memory _uri
+  ) external 
+    onlyRole(DEFAULT_ADMIN_ROLE) 
+    whenNotPaused 
+  {
     baseURI = _uri;
   }
 
-  function pause() external onlyOwner {
+  function pause() 
+    external 
+    onlyRole(DEFAULT_ADMIN_ROLE) 
+  {
     _pause();
   }
 
-  function unpause() external onlyOwner {
+  function unpause() 
+    external onlyRole(DEFAULT_ADMIN_ROLE) 
+  {
     _unpause();
   }
 
-  function setCrossMiner(address _miner) external onlyOwner {
-    crossMiner = _miner;
+  function setCrossMiner(
+    address _miner
+  ) 
+    external 
+    onlyRole(DEFAULT_ADMIN_ROLE) 
+  {
+    CROSS_MINER = _miner;
+    emit NewCrossMiner(_miner);
   }
 
-  function crossMint(address _to, uint256 _id) external isCrossMiner {
-    require(_exists(_id));
+  function crossMint(
+    address _to, 
+    uint256 _id
+  ) 
+    external 
+  {
+    require(msg.sender == CROSS_MINER, "papa: no access");
+    require(_exists(_id), "papa: id valid");
     _transfer(ownerOf(_id), _to, _id);
+    emit CrossChain(_to, _id);
   }
 
-  function deposit(uint256 _id) external {
+  function depositCross(
+    uint256 _id
+  ) 
+    external 
+  {
     require(ownerOf(_id) == msg.sender);
     _transfer(msg.sender, address(this), _id);
+    emit DepositCross(msg.sender, _id);
+  }
+
+  function _beforeTokenTransfer(
+      address from,
+      address to,
+      uint256 tokenId
+  ) 
+    internal 
+    override
+  {
+    require(!paused(), "Pausable: paused");
+    super._beforeTokenTransfer(from, to, tokenId);
   }
 }

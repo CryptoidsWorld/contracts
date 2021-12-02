@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -10,7 +11,7 @@ import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
 import "../interface/IPAPA.sol";
 
-contract PAPAHelper is EIP712, Ownable, Pausable {
+contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
   using SafeERC20 for IERC20;
 
   address public pac;
@@ -22,14 +23,16 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
   mapping(uint256 => uint256[2]) public parents;
   mapping(uint256 => uint256[]) public children;
 
-  address public EVOLVE_ADMIN;
+  address public EVOLVE_ADMIN1;
+  address public EVOLVE_ADMIN2;
   bytes32 public constant EVOLVE_TYPEHASH = keccak256('Evolve(uint256 id,uint256 genes1,uint256 genes2)');
 
   uint256 public nextId;
   uint256 constant MAX_BREED_TIMES = 7;
 
   event PapaBreedNew(uint256 indexed petId, address indexed owner, uint256 parent1, uint256 parent2);
-  event EvolveAdmin(address indexed admin);
+  event EvolveAdmin(address indexed admin1, address indexed admin2);
+  event ChangeConfig(uint256[7] pacCostConfig, uint256[7] pgcCostConfig);
 
   constructor(address _pac, address _pgc, address _papacore, uint256 _startId) EIP712("PAPA Helper", "1") {
     pac = _pac;
@@ -38,10 +41,17 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
     nextId = _startId;
   }
 
-  function setEvolveAdmin(address _admin) external onlyOwner {
-    require(_admin != address(0));
-    EVOLVE_ADMIN = _admin;
-    emit EvolveAdmin(_admin);
+  function setEvolveAdmin(
+    address _admin1,
+    address _admin2
+  ) 
+    external 
+    onlyOwner 
+  {
+    require(_admin1 != address(0) && _admin2 != address(0));
+    EVOLVE_ADMIN1 = _admin1;
+    EVOLVE_ADMIN2 = _admin2;
+    emit EvolveAdmin(_admin1, _admin2);
   }
 
   function setCostConfig(
@@ -53,6 +63,19 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
   {
     pacCostConfig = _pacCostConfig;
     pgcCostConfig = _pgcCostConfig;
+
+    emit ChangeConfig(_pacCostConfig, _pgcCostConfig);
+  }
+
+  function withdraw(
+    uint256 _pacAmount,
+    uint256 _pgcAmount
+  )
+    external
+    onlyOwner
+  {
+    IERC20(pac).transfer(owner(), _pacAmount);
+    IERC20(pgc).transfer(owner(), _pgcAmount);
   }
 
   function cost1(
@@ -134,20 +157,19 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
       _genes2
     )));
     address signatory = ECDSA.recover(digest, v, r, s);
-    require(signatory == EVOLVE_ADMIN, "Signature valid.");
+    require(signatory == EVOLVE_ADMIN1 || signatory == EVOLVE_ADMIN2, "Signature valid.");
     _evolve(_petId, _genes1, _genes2);
   }
 
-  function evolveWithSigner(
+  function evolveBySigner(
     uint256 _petId,
     uint256 _genes1,
     uint256 _genes2
   )
     external
-    onlyOwner
     whenNotPaused
   {
-    require(msg.sender == EVOLVE_ADMIN);
+    require(msg.sender == EVOLVE_ADMIN1 || msg.sender == EVOLVE_ADMIN2, "no access");
     _evolve(_petId, _genes1, _genes2);
   }
 
@@ -161,11 +183,17 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
     IPAPA(papacore).evolvePAPA(_petId, _genes1, _genes2);
   }
 
-  function pause() external onlyOwner {
+  function pause() 
+    external 
+    onlyOwner 
+  {
     _pause();
   }
 
-  function unpause() external onlyOwner {
+  function unpause() 
+    external 
+    onlyOwner 
+  {
     _unpause();
   }
 }

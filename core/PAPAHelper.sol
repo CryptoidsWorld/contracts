@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,15 +10,15 @@ import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
 import "../interface/IPAPA.sol";
 
-contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
+contract PAPAHelper is EIP712, Ownable, Pausable {
   using SafeERC20 for IERC20;
 
-  address public pac;
-  address public pgc;
+  address public cac;
+  address public cgc;
   address public papacore;
 
-  uint256[7] public pacCostConfig;
-  uint256[7] public pgcCostConfig;
+  uint256[7] public cacCostConfig;
+  uint256[7] public cgcCostConfig;
   mapping(uint256 => uint256[2]) public parents;
   mapping(uint256 => uint256[]) public children;
 
@@ -30,13 +29,14 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
   uint256 public nextId;
   uint256 constant MAX_BREED_TIMES = 7;
 
-  event PapaBreedNew(uint256 indexed petId, address indexed owner, uint256 parent1, uint256 parent2);
+  event PapaBreedNew(uint256 indexed petId, address indexed owner, uint256 parent1, uint256 parent2, uint cac, uint cgc);
   event EvolveAdmin(address indexed admin1, address indexed admin2);
-  event ChangeConfig(uint256[7] pacCostConfig, uint256[7] pgcCostConfig);
+  event ChangeConfig(uint256[7] cacCostConfig, uint256[7] cgcCostConfig);
+  event Evolve(uint256 indexed petId, address indexed signer);
 
-  constructor(address _pac, address _pgc, address _papacore, uint256 _startId) EIP712("PAPA Helper", "1") {
-    pac = _pac;
-    pgc = _pgc;
+  constructor(address _cac, address _cgc, address _papacore, uint256 _startId) EIP712("Cryptoids Helper", "1") {
+    cac = _cac;
+    cgc = _cgc;
     papacore = _papacore;
     nextId = _startId;
   }
@@ -55,27 +55,27 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
   }
 
   function setCostConfig(
-    uint256[7] memory _pacCostConfig,
-    uint256[7] memory _pgcCostConfig
+    uint256[7] memory _cacCostConfig,
+    uint256[7] memory _cgcCostConfig
   )
     external
     onlyOwner
   {
-    pacCostConfig = _pacCostConfig;
-    pgcCostConfig = _pgcCostConfig;
+    cacCostConfig = _cacCostConfig;
+    cgcCostConfig = _cgcCostConfig;
 
-    emit ChangeConfig(_pacCostConfig, _pgcCostConfig);
+    emit ChangeConfig(_cacCostConfig, _cgcCostConfig);
   }
 
   function withdraw(
-    uint256 _pacAmount,
-    uint256 _pgcAmount
+    uint256 _cacAmount,
+    uint256 _cgcAmount
   )
     external
     onlyOwner
   {
-    IERC20(pac).transfer(owner(), _pacAmount);
-    IERC20(pgc).transfer(owner(), _pgcAmount);
+    IERC20(cac).transfer(owner(), _cacAmount);
+    IERC20(cgc).transfer(owner(), _cgcAmount);
   }
 
   function cost1(
@@ -83,12 +83,12 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
   )
     external
     view
-    returns (uint256 pacCost, uint256 pgcCost)
+    returns (uint256 cacCost, uint256 cgcCost)
   {
     uint256 times = children[_petId].length;
     require(times < MAX_BREED_TIMES, "papa breed: reached the max times.");
-    pacCost = pacCostConfig[times];
-    pgcCost = pgcCostConfig[times];
+    cacCost = cacCostConfig[times];
+    cgcCost = cgcCostConfig[times];
   }
 
   function cost(
@@ -97,11 +97,11 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
   )
     external
     view
-    returns (uint256 pacCost, uint256 pgcCost)
+    returns (uint256 cacCost, uint256 cgcCost)
   {
-    (uint256 pac1, uint256 pgc1) = this.cost1(_pet1);
-    (uint256 pac2, uint256 pgc2) = this.cost1(_pet2);
-    return (pac1+pac2, pgc1+pgc2);
+    (uint256 cac1, uint256 cgc1) = this.cost1(_pet1);
+    (uint256 cac2, uint256 cgc2) = this.cost1(_pet2);
+    return (cac1+cac2, cgc1+cgc2);
   }
 
   function breedCount(
@@ -125,9 +125,9 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
     require(IPAPA(papacore).ownerOf(_pet1) == msg.sender);
     require(IPAPA(papacore).ownerOf(_pet2) == msg.sender);
 
-    (uint256 pacCost, uint256 pgcCost) = this.cost(_pet1, _pet2);
-    IERC20(pac).safeTransferFrom(msg.sender, address(this), pacCost);
-    IERC20(pgc).safeTransferFrom(msg.sender, address(this), pgcCost);
+    (uint256 cacCost, uint256 cgcCost) = this.cost(_pet1, _pet2);
+    IERC20(cac).safeTransferFrom(msg.sender, address(this), cacCost);
+    IERC20(cgc).safeTransferFrom(msg.sender, address(this), cgcCost);
 
     uint256 babyId = nextId;
     // 0 means from breed
@@ -136,7 +136,7 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
     children[_pet2].push(babyId);
     parents[babyId] = [_pet1, _pet2];
     nextId++;
-    emit PapaBreedNew(babyId, msg.sender, _pet1, _pet2);
+    emit PapaBreedNew(babyId, msg.sender, _pet1, _pet2, cacCost, cgcCost);
   }
 
   function evolve(
@@ -159,6 +159,7 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
     address signatory = ECDSA.recover(digest, v, r, s);
     require(signatory == EVOLVE_ADMIN1 || signatory == EVOLVE_ADMIN2, "Signature valid.");
     _evolve(_petId, _genes1, _genes2);
+    emit Evolve(_petId, signatory);
   }
 
   function evolveBySigner(
@@ -171,6 +172,7 @@ contract PAPAHelper is EIP712, Ownable, Pausable, AccessControl {
   {
     require(msg.sender == EVOLVE_ADMIN1 || msg.sender == EVOLVE_ADMIN2, "no access");
     _evolve(_petId, _genes1, _genes2);
+    emit Evolve(_petId, msg.sender);
   }
 
   function _evolve(

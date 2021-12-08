@@ -30,7 +30,7 @@ contract PAPACore is ERC721Enumerable, AccessControl, Pausable, ERC721Holder {
   event NewEvolveAdmin(address indexed admin);
   event NewCrossMiner(address indexed newCrossMiner);
 
-  constructor() ERC721("PAPA Master", "PAPA") {
+  constructor() ERC721("Cryptoids Master", "CP") {
     maxSupply = 1000000;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }

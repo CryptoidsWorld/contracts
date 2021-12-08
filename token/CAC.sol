@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract CAC is ERC20("PAPA Administrator Coin", "CAC"), Ownable {
-  uint256 public constant maxSupply = 10 ** 27;
+contract CAC is ERC20("Cryptoids Administrator Coin", "CAC"), Ownable {
+  uint256 public constant maxSupply = 10 ** 26;
   event GameCharge(address indexed from, uint256 amount);
   
   function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {

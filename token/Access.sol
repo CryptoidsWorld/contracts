@@ -27,7 +27,7 @@ contract Access is EIP712, Pausable, Ownable {
   address public SIGNER1;
   address public SIGNER2;
 
-  event GameWithdraw(uint256 indexed orderId, address indexed recevier, uint256 amount);
+  event GameWithdraw(uint256 indexed orderId, address indexed recevier, uint256 amount, address signer);
   event SetInterval(uint256 _interval, uint256 _maxWithdraw);
   event SetSigner(address indexed signer1, address indexed signer2);
 
@@ -116,7 +116,7 @@ contract Access is EIP712, Pausable, Ownable {
     require(SIGNER1 == signatory || SIGNER2 == signatory, "Access: signature not valid.");
     _transfer(_receiver, _amount);
     orderStatus[_orderId] = true;
-    emit GameWithdraw(_orderId, _receiver, _amount);
+    emit GameWithdraw(_orderId, _receiver, _amount, signatory);
   }
 
   function mintBySigner(
@@ -131,7 +131,7 @@ contract Access is EIP712, Pausable, Ownable {
     require(SIGNER1 == msg.sender || SIGNER2 == msg.sender, "Access: signature not valid.");
     _transfer(_receiver, _amount);
     orderStatus[_orderId] = true;
-    emit GameWithdraw(_orderId, _receiver, _amount);
+    emit GameWithdraw(_orderId, _receiver, _amount, msg.sender);
   }
 
   function pause() 

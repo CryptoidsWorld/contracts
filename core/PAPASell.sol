@@ -40,13 +40,6 @@ contract PAPASell is Ownable {
     source = _source;
   }
 
-  function withdraw() 
-    external 
-    onlyOwner 
-  {
-    payable(ceo).transfer(address(this).balance);
-  }
-
   function buy(uint256 num) payable external {
     require(num > 0 && num <= 50, "num invalid");
     require(msg.value == price*num, "price invalid");
@@ -56,6 +49,7 @@ contract PAPASell is Ownable {
       IPAPA(papacore).spawnPAPA(nextId, msg.sender, source);
       nextId++;
     }
+    payable(ceo).transfer(address(this).balance);
 
     emit Purchase(msg.sender, num, msg.value);
   }

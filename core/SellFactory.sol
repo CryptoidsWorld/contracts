@@ -30,7 +30,7 @@ contract SellFactory is Ownable {
 		assembly {
       addr := create2(0, add(bytecode, 32), mload(bytecode), salt)
     }
-    require(addr != 0x0000000000000000000000000000000000000000, "creat2 error");
+    require(addr != address(0), "creat2 error");
 
     PAPASell(addr).initialize(ceo, papacore, _startId, _endId, _price, deploySource);
     IAccessControl(papacore).grantRole(MINTER_ROLE, addr);

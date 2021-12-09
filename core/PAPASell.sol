@@ -3,11 +3,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "../interface/ISellFactory.sol";
 
-import "../interface/IPAPA.sol";
-contract PAPASell is Ownable {
+contract PAPASell is Ownable, Pausable {
   address public ceo;
-  address public papacore;
+  uint256 public startBlock;
+
   uint256 public startId;
   uint256 public endId;
   uint32 public source;
@@ -19,7 +21,7 @@ contract PAPASell is Ownable {
 
   function initialize(
     address _ceo, 
-    address _papacore, 
+    uint256 _startBlock, 
     uint256 _startId, 
     uint256 _endId, 
     uint256 _price, 
@@ -32,7 +34,7 @@ contract PAPASell is Ownable {
     require(_startId < _endId);
 
     ceo = _ceo;
-    papacore = _papacore;
+    startBlock = _startBlock;
     startId = _startId;
     endId = _endId;
     nextId = _startId;
@@ -40,17 +42,41 @@ contract PAPASell is Ownable {
     source = _source;
   }
 
-  function buy(uint256 num) payable external {
+  function withdraw() external {
+    payable(ceo).transfer(address(this).balance);
+  }
+
+  function buy(
+    uint256 num
+  ) 
+    payable 
+    external 
+    whenNotPaused
+  {
+    require(block.number > startBlock, "not start");
     require(num > 0 && num <= 50, "num invalid");
     require(msg.value == price*num, "price invalid");
     require(nextId+num-1 <= endId, "sell out");
     
     for (uint i=0; i<num; i++) {
-      IPAPA(papacore).spawnPAPA(nextId, msg.sender, source);
+      ISellFactory(owner()).buyProxy(nextId, msg.sender, source);
       nextId++;
     }
-    payable(ceo).transfer(address(this).balance);
 
     emit Purchase(msg.sender, num, msg.value);
+  }
+
+  function pause() 
+    external 
+    onlyOwner
+  {
+    _pause();
+  }
+
+  function unpause() 
+    external
+    onlyOwner
+  {
+    _unpause();
   }
 }

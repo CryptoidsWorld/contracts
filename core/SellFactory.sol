@@ -5,12 +5,12 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
 import "./PAPASell.sol";
+import "../interface/IPAPA.sol";
 
 contract SellFactory is Ownable {
   address public immutable papacore;
   address private immutable ceo;
   uint32 public nextSource = 1;
-  bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
   address[] public sellContracts;
 
   event Deploy(address indexed contractAddr, uint32 indexed source, uint256 startId, uint256 endId, uint256 price);
@@ -20,7 +20,33 @@ contract SellFactory is Ownable {
     ceo = _ceo;
   }
 
-  function deploy(uint256 _startId, uint256 _endId, uint256 _price) external onlyOwner {
+  function pauseChild(uint32 _source) external onlyOwner {
+    PAPASell(sellContracts[_source-1]).pause();
+  }
+
+  function unpauseChild(uint32 _source) external onlyOwner {
+    PAPASell(sellContracts[_source-1]).unpause();
+  }
+
+  function buyProxy(
+    uint256 _petId,
+    address _to,
+    uint32 _source
+  )
+    external
+  {
+    require(sellContracts[_source-1] == msg.sender, "buy: must call from child contract");
+    IPAPA(papacore).spawnPAPA(_petId, _to, _source);
+  }
+
+  function deploy(
+    uint256 _startBlock,
+    uint256 _startId, 
+    uint256 _endId, 
+    uint256 _price
+  ) external 
+    onlyOwner 
+  {
     bytes memory bytecode = type(PAPASell).creationCode;
 
     address addr;
@@ -32,8 +58,7 @@ contract SellFactory is Ownable {
     }
     require(addr != address(0), "creat2 error");
 
-    PAPASell(addr).initialize(ceo, papacore, _startId, _endId, _price, deploySource);
-    IAccessControl(papacore).grantRole(MINTER_ROLE, addr);
+    PAPASell(addr).initialize(ceo, _startBlock, _startId, _endId, _price, deploySource);
     sellContracts.push(addr);
     nextSource++;
 

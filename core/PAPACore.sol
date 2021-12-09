@@ -2,49 +2,39 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "./common/CrossNFT.sol";
 
-contract PAPACore is ERC721Enumerable, AccessControl, Pausable, ERC721Holder {
+contract PAPACore is CrossNFT {
   struct papaMeta {
     uint256 genes1;
     uint256 genes2;
     uint256 bornAt;
   }
 
-
-  mapping(uint256 => papaMeta) public papaes;
-  uint256 public immutable maxSupply;
   string public baseURI;
+  uint256 public immutable maxSupply;
+  mapping(uint256 => papaMeta) public papaes;
 
-  address public CROSS_MINER;
+  address public MINTER_ADMIN;
   address public EVOLVE_ADMIN;
-  bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-  event PAPASpawned(uint256 indexed petId, address indexed owner, uint32 indexed source);
-  event PAPAEvolved(uint256 indexed petId, uint256 genes1, uint256 genes2);
-  event CrossChain(address indexed receiver, uint256 indexed petId);
-  event DepositCross(address indexed sender, uint256 indexed petId);
   event NewEvolveAdmin(address indexed admin);
-  event NewCrossMiner(address indexed newCrossMiner);
+  event NewMinterAdmin(address indexed admin);
+  event PAPAEvolved(uint256 indexed petId, uint256 genes1, uint256 genes2);
+  event PAPASpawned(uint256 indexed petId, address indexed owner, uint32 indexed source);
 
   constructor() ERC721("Cryptoids Master", "CP") {
     maxSupply = 1000000;
-    _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
-  function supportsInterface(
-    bytes4 interfaceId
-  ) 
-    public 
-    view 
-    virtual 
-    override(ERC721Enumerable, AccessControl) 
-    returns (bool) 
+  function setMinterAdmin(
+    address _admin
+  )
+    external 
+    onlyOwner
   {
-    return super.supportsInterface(interfaceId);
+    MINTER_ADMIN = _admin;
+    emit NewMinterAdmin(_admin);
   }
 
   function spawnPAPA(
@@ -53,10 +43,9 @@ contract PAPACore is ERC721Enumerable, AccessControl, Pausable, ERC721Holder {
     uint32 _source
   )
     external
-    onlyRole(MINTER_ROLE)
     whenNotPaused
   {
-    // source eq 0 means called from breed contract.
+    require(msg.sender == MINTER_ADMIN, "NFT: caller is not the minter");
     require(totalSupply() < maxSupply, "NFT: Total supply reached");
     _mint(_to, _petId);
     papaes[_petId] = papaMeta(0, 0, block.timestamp);
@@ -67,7 +56,7 @@ contract PAPACore is ERC721Enumerable, AccessControl, Pausable, ERC721Holder {
     address _admin
   )
     external 
-    onlyRole(DEFAULT_ADMIN_ROLE) 
+    onlyOwner
   {
     EVOLVE_ADMIN = _admin;
     emit NewEvolveAdmin(_admin);
@@ -129,66 +118,9 @@ contract PAPACore is ERC721Enumerable, AccessControl, Pausable, ERC721Holder {
   function setBaseURI(
     string memory _uri
   ) external 
-    onlyRole(DEFAULT_ADMIN_ROLE) 
+    onlyOwner
     whenNotPaused 
   {
     baseURI = _uri;
-  }
-
-  function pause() 
-    external 
-    onlyRole(DEFAULT_ADMIN_ROLE) 
-  {
-    _pause();
-  }
-
-  function unpause() 
-    external onlyRole(DEFAULT_ADMIN_ROLE) 
-  {
-    _unpause();
-  }
-
-  function setCrossMiner(
-    address _miner
-  ) 
-    external 
-    onlyRole(DEFAULT_ADMIN_ROLE) 
-  {
-    CROSS_MINER = _miner;
-    emit NewCrossMiner(_miner);
-  }
-
-  function crossMint(
-    address _to, 
-    uint256 _id
-  ) 
-    external 
-  {
-    require(msg.sender == CROSS_MINER, "papa: no access");
-    require(_exists(_id), "papa: id valid");
-    _transfer(ownerOf(_id), _to, _id);
-    emit CrossChain(_to, _id);
-  }
-
-  function depositCross(
-    uint256 _id
-  ) 
-    external 
-  {
-    require(ownerOf(_id) == msg.sender);
-    _transfer(msg.sender, address(this), _id);
-    emit DepositCross(msg.sender, _id);
-  }
-
-  function _beforeTokenTransfer(
-      address from,
-      address to,
-      uint256 tokenId
-  ) 
-    internal 
-    override
-  {
-    require(!paused(), "Pausable: paused");
-    super._beforeTokenTransfer(from, to, tokenId);
   }
 }

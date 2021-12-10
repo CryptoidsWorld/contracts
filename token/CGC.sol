@@ -16,6 +16,7 @@ contract CGC is ERC20("Cryptoids Game Coin", "CGC"), Ownable {
   }
 
   function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
+    require(_to != address(0), "ERC20: mint to the zero address");
     _mint(_to, _amount);
     return true;
   }

@@ -2,9 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import "./common/CrossNFT.sol";
+import "./common/PauseOwnable.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-contract PAPACore is CrossNFT {
+contract PAPACore is PauseOwnable, ERC721Enumerable, ERC721Holder {
   struct papaMeta {
     uint256 genes1;
     uint256 genes2;

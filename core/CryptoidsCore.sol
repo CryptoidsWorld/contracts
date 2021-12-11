@@ -6,8 +6,8 @@ import "./common/PauseOwnable.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-contract PAPACore is PauseOwnable, ERC721Enumerable, ERC721Holder {
-  struct papaMeta {
+contract CryptoidsCore is PauseOwnable, ERC721Enumerable, ERC721Holder {
+  struct cryptoid {
     uint256 genes1;
     uint256 genes2;
     uint256 bornAt;
@@ -15,7 +15,7 @@ contract PAPACore is PauseOwnable, ERC721Enumerable, ERC721Holder {
 
   string public baseURI;
   uint256 public immutable maxSupply;
-  mapping(uint256 => papaMeta) public papaes;
+  mapping(uint256 => cryptoid) public cps;
 
   address public MINTER_ADMIN;
   address public EVOLVE_ADMIN;
@@ -47,10 +47,10 @@ contract PAPACore is PauseOwnable, ERC721Enumerable, ERC721Holder {
     external
     whenNotPaused
   {
-    require(msg.sender == MINTER_ADMIN, "NFT: caller is not the minter");
-    require(totalSupply() < maxSupply, "NFT: Total supply reached");
+    require(msg.sender == MINTER_ADMIN, "Cryptoids: caller is not the minter");
+    require(totalSupply() < maxSupply, "Cryptoids: Total supply reached");
     _mint(_to, _petId);
-    papaes[_petId] = papaMeta(0, 0, block.timestamp);
+    cps[_petId] = cryptoid(0, 0, block.timestamp);
     emit PAPASpawned(_petId, _to, _source);
   }
 
@@ -72,15 +72,16 @@ contract PAPACore is PauseOwnable, ERC721Enumerable, ERC721Holder {
     external
     whenNotPaused
   {
-    require(msg.sender == EVOLVE_ADMIN, "papa: no access");
-    require(_exists(_petId), "papa: pet does not exists!");
-    papaMeta storage papa = papaes[_petId];
-    papa.genes1 = _genes1;
-    papa.genes2 = _genes2;
+    require(msg.sender == EVOLVE_ADMIN, "Cryptoids: No access");
+    require(_exists(_petId), "Cryptoids: Pet does not exists");
+    cryptoid storage cp = cps[_petId];
+    require(cp.genes1 == 0 && cp.genes2 ==0, "Cryptoids: Already evolve");
+    cp.genes1 = _genes1;
+    cp.genes2 = _genes2;
     emit PAPAEvolved(_petId, _genes1, _genes2);
   }
 
-  function papaesOfOwnerBySize(
+  function cpsOfOwnerBySize(
     address _owner,
     uint256 _cursor,
     uint256 _size
@@ -109,8 +110,8 @@ contract PAPACore is PauseOwnable, ERC721Enumerable, ERC721Holder {
     view 
     returns (uint256, uint256, uint256) 
   {
-    papaMeta memory papa = papaes[_petId];
-    return (papa.genes1, papa.genes2, papa.bornAt);
+    cryptoid memory cp = cps[_petId];
+    return (cp.genes1, cp.genes2, cp.bornAt);
   }
 
   function _baseURI() internal view override returns (string memory) {

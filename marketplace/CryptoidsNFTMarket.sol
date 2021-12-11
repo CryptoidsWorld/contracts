@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "../interface/IWBNB.sol";
 
-contract PAPANFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
+contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
 

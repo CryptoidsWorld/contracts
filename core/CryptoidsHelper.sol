@@ -2,20 +2,19 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-import "../interface/IPAPA.sol";
+import "./common/PauseOwnable.sol";
+import "../interface/ICryptoids.sol";
 
-contract PAPAHelper is EIP712, Ownable, Pausable {
+contract CryptoidsHelper is EIP712, PauseOwnable {
   using SafeERC20 for IERC20;
 
   address public cac;
   address public cgc;
-  address public papacore;
+  address public cpcore;
 
   uint256[7] public cacCostConfig;
   uint256[7] public cgcCostConfig;
@@ -34,10 +33,10 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
   event ChangeConfig(uint256[7] cacCostConfig, uint256[7] cgcCostConfig);
   event Evolve(uint256 indexed petId, address indexed signer);
 
-  constructor(address _cac, address _cgc, address _papacore, uint256 _startId) EIP712("Cryptoids Helper", "1") {
+  constructor(address _cac, address _cgc, address _cpcore, uint256 _startId) EIP712("Cryptoids Helper", "1") {
     cac = _cac;
     cgc = _cgc;
-    papacore = _papacore;
+    cpcore = _cpcore;
     nextId = _startId;
   }
 
@@ -122,8 +121,8 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
     whenNotPaused
   {
     require(_pet1 != _pet2);
-    require(IPAPA(papacore).ownerOf(_pet1) == msg.sender);
-    require(IPAPA(papacore).ownerOf(_pet2) == msg.sender);
+    require(ICryptoids(cpcore).ownerOf(_pet1) == msg.sender);
+    require(ICryptoids(cpcore).ownerOf(_pet2) == msg.sender);
 
     (uint256 cacCost, uint256 cgcCost) = this.cost(_pet1, _pet2);
     IERC20(cac).safeTransferFrom(msg.sender, address(this), cacCost);
@@ -131,7 +130,7 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
 
     uint256 babyId = nextId;
     // 0 means from breed
-    IPAPA(papacore).spawnPAPA(babyId, msg.sender, 0);
+    ICryptoids(cpcore).spawnPAPA(babyId, msg.sender, 0);
     children[_pet1].push(babyId);
     children[_pet2].push(babyId);
     parents[babyId] = [_pet1, _pet2];
@@ -182,20 +181,6 @@ contract PAPAHelper is EIP712, Ownable, Pausable {
   ) 
     internal 
   {
-    IPAPA(papacore).evolvePAPA(_petId, _genes1, _genes2);
-  }
-
-  function pause() 
-    external 
-    onlyOwner 
-  {
-    _pause();
-  }
-
-  function unpause() 
-    external 
-    onlyOwner 
-  {
-    _unpause();
+    ICryptoids(cpcore).evolvePAPA(_petId, _genes1, _genes2);
   }
 }

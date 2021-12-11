@@ -4,9 +4,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+
+import "./common/PauseOwnable.sol";
 import "../interface/ISellFactory.sol";
 
-contract PAPASell is Ownable, Pausable {
+contract CryptoidsSell is PauseOwnable {
   address public ceo;
   uint256 public startBlock;
 
@@ -64,19 +66,5 @@ contract PAPASell is Ownable, Pausable {
     }
 
     emit Purchase(msg.sender, num, msg.value);
-  }
-
-  function pause() 
-    external 
-    onlyOwner
-  {
-    _pause();
-  }
-
-  function unpause() 
-    external
-    onlyOwner
-  {
-    _unpause();
   }
 }

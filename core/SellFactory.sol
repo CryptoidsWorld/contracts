@@ -4,28 +4,29 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
-import "./PAPASell.sol";
-import "../interface/IPAPA.sol";
+
+import "./CryptoidsSell.sol";
+import "../interface/ICryptoids.sol";
 
 contract SellFactory is Ownable {
-  address public immutable papacore;
+  address public immutable cpcore;
   address private immutable ceo;
   uint32 public nextSource = 1;
   address[] public sellContracts;
 
   event Deploy(address indexed contractAddr, uint32 indexed source, uint256 startId, uint256 endId, uint256 price);
 
-  constructor(address _papaCore, address _ceo) {
-    papacore = _papaCore;
+  constructor(address _cpcore, address _ceo) {
+    cpcore = _cpcore;
     ceo = _ceo;
   }
 
   function pauseChild(uint32 _source) external onlyOwner {
-    PAPASell(sellContracts[_source-1]).pause();
+    CryptoidsSell(sellContracts[_source-1]).pause();
   }
 
   function unpauseChild(uint32 _source) external onlyOwner {
-    PAPASell(sellContracts[_source-1]).unpause();
+    CryptoidsSell(sellContracts[_source-1]).unpause();
   }
 
   function buyProxy(
@@ -36,7 +37,7 @@ contract SellFactory is Ownable {
     external
   {
     require(sellContracts[_source-1] == msg.sender, "buy: must call from child contract");
-    IPAPA(papacore).spawnPAPA(_petId, _to, _source);
+    ICryptoids(cpcore).spawnPAPA(_petId, _to, _source);
   }
 
   function deploy(
@@ -47,7 +48,7 @@ contract SellFactory is Ownable {
   ) external 
     onlyOwner 
   {
-    bytes memory bytecode = type(PAPASell).creationCode;
+    bytes memory bytecode = type(CryptoidsSell).creationCode;
 
     address addr;
     uint32 deploySource = nextSource;
@@ -58,7 +59,7 @@ contract SellFactory is Ownable {
     }
     require(addr != address(0), "creat2 error");
 
-    PAPASell(addr).initialize(ceo, _startBlock, _startId, _endId, _price, deploySource);
+    CryptoidsSell(addr).initialize(ceo, _startBlock, _startId, _endId, _price, deploySource);
     sellContracts.push(addr);
     nextSource++;
 

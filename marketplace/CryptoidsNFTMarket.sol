@@ -87,8 +87,7 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
     event CollectionUpdate(
         address indexed collection,
         address indexed creator,
-        uint256 tradingFee,
-        uint256 creatorFee
+        uint256 tradingFee
     );
 
     // Admin and Treasury Addresses are updated
@@ -302,30 +301,23 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
      * @param _collection: collection address
      * @param _creator: creator address (must be 0x00 if none)
      * @param _tradingFee: trading fee (100 = 1%, 500 = 5%, 5 = 0.05%)
-     * @param _creatorFee: creator fee (100 = 1%, 500 = 5%, 5 = 0.05%, 0 if creator is 0x00)
      * @dev Callable by admin
      */
     function modifyCollection(
         address _collection,
         address _creator,
-        uint256 _tradingFee,
-        uint256 _creatorFee
+        uint256 _tradingFee
     ) external onlyAdmin {
         require(_collectionAddressSet.contains(_collection), "Operations: Collection not listed");
 
-        require(
-            (_creatorFee == 0 && _creator == address(0)) || (_creatorFee != 0 && _creator != address(0)),
-            "Operations: Creator parameters incorrect"
-        );
-
-        require(_tradingFee + _creatorFee <= TOTAL_MAX_FEE, "Operations: Sum of fee must inferior to TOTAL_MAX_FEE");
+        require(_tradingFee <= TOTAL_MAX_FEE, "Operations: fee must inferior to TOTAL_MAX_FEE");
 
         _collections[_collection] = Collection({
             status: CollectionStatus.Open,
             tradingFee: _tradingFee
         });
 
-        emit CollectionUpdate(_collection, _creator, _tradingFee, _creatorFee);
+        emit CollectionUpdate(_collection, _creator, _tradingFee);
     }
 
     /**

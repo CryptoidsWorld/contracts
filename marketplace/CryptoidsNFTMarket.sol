@@ -86,7 +86,6 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
     // Existing collection is updated
     event CollectionUpdate(
         address indexed collection,
-        address indexed creator,
         uint256 tradingFee
     );
 
@@ -299,13 +298,11 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
     /**
      * @notice Modify collection characteristics
      * @param _collection: collection address
-     * @param _creator: creator address (must be 0x00 if none)
      * @param _tradingFee: trading fee (100 = 1%, 500 = 5%, 5 = 0.05%)
      * @dev Callable by admin
      */
     function modifyCollection(
         address _collection,
-        address _creator,
         uint256 _tradingFee
     ) external onlyAdmin {
         require(_collectionAddressSet.contains(_collection), "Operations: Collection not listed");
@@ -317,7 +314,7 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
             tradingFee: _tradingFee
         });
 
-        emit CollectionUpdate(_collection, _creator, _tradingFee);
+        emit CollectionUpdate(_collection, _tradingFee);
     }
 
     /**

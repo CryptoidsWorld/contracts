@@ -120,9 +120,13 @@ contract CryptoidsHelper is EIP712, PauseOwnable {
     external
     whenNotPaused
   {
-    require(_pet1 != _pet2);
-    require(ICryptoids(cpcore).ownerOf(_pet1) == msg.sender);
-    require(ICryptoids(cpcore).ownerOf(_pet2) == msg.sender);
+    require(_pet1 != _pet2, "breed: same pet");
+    require(ICryptoids(cpcore).ownerOf(_pet1) == msg.sender, "breed: not owner");
+    require(ICryptoids(cpcore).ownerOf(_pet2) == msg.sender, "breed: not owner");
+    (uint256 gene1, uint256 gene2, ) = ICryptoids(cpcore).getMetaInfo(_pet1);
+    require(gene1 > 0 && gene2 > 0, "breed: not evoloved");
+    (gene1, gene2, ) = ICryptoids(cpcore).getMetaInfo(_pet2);
+    require(gene1 > 0 && gene2 > 0, "breed: not evoloved");
 
     (uint256 cacCost, uint256 cgcCost) = this.cost(_pet1, _pet2);
     IERC20(cac).safeTransferFrom(msg.sender, address(this), cacCost);

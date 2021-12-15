@@ -8,7 +8,7 @@ import "../interface/ICryptoids.sol";
 
 contract SellFactory is Ownable {
   address public immutable cpcore;
-  address private immutable ceo;
+  address public immutable ceo;
   uint32 public nextSource = 1;
   address[] public sellContracts;
 

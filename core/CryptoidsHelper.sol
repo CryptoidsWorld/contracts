@@ -12,6 +12,8 @@ import "../interface/ICryptoids.sol";
 contract CryptoidsHelper is EIP712, PauseOwnable {
   using SafeERC20 for IERC20;
 
+  address public ceo;
+
   address public cac;
   address public cgc;
   address public cpcore;
@@ -26,14 +28,15 @@ contract CryptoidsHelper is EIP712, PauseOwnable {
   bytes32 public constant EVOLVE_TYPEHASH = keccak256('Evolve(uint256 id,uint256 genes1,uint256 genes2)');
 
   uint256 public nextId;
-  uint256 constant MAX_BREED_TIMES = 7;
+  uint256 public constant MAX_BREED_TIMES = 7;
 
-  event PapaBreedNew(uint256 indexed petId, address indexed owner, uint256 parent1, uint256 parent2, uint cac, uint cgc);
+  event PapaBreedNew(uint256 indexed petId, address indexed owner, uint256 parent1, uint256 parent2, uint256 cac, uint256 cgc);
   event EvolveAdmin(address indexed admin1, address indexed admin2);
   event ChangeConfig(uint256[7] cacCostConfig, uint256[7] cgcCostConfig);
   event Evolve(uint256 indexed petId, address indexed signer);
 
-  constructor(address _cac, address _cgc, address _cpcore, uint256 _startId) EIP712("Cryptoids Helper", "1") {
+  constructor(address _ceo, address _cac, address _cgc, address _cpcore, uint256 _startId) EIP712("Cryptoids Helper", "1") {
+    ceo = _ceo;
     cac = _cac;
     cgc = _cgc;
     cpcore = _cpcore;
@@ -71,8 +74,8 @@ contract CryptoidsHelper is EIP712, PauseOwnable {
     uint256 _cgcAmount
   )
     external
-    onlyOwner
   {
+    require(msg.sender == ceo);
     IERC20(cac).transfer(owner(), _cacAmount);
     IERC20(cgc).transfer(owner(), _cgcAmount);
   }

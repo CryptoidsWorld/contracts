@@ -58,7 +58,7 @@ contract CryptoidsSell is PauseOwnable {
     require(block.number > startBlock, "not start");
     require(num > 0 && num <= 50, "num invalid");
     require(msg.value == price*num, "price invalid");
-    require(nextId+num-1 < endId, "sell out");
+    require(nextId+num-1 <= endId, "sell out");
     
     for (uint i=0; i<num; i++) {
       ISellFactory(owner()).buyProxy(nextId, msg.sender, source);

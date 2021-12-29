@@ -6,15 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CAC is ERC20("Cryptoids Administrator Coin", "CAC"), Ownable {
-  uint256 public maxSupply;
+  uint256 constant public maxSupply = 500000000 ether;
   address public accessContractAddr;
   event GameCharge(address indexed from, uint256 amount);
   event SetAccessContract(address);
-
-  constructor() {
-    uint256 fractions = 10 ** uint256(18);
-    maxSupply = 500000000 * fractions;
-  }
 
   function setAccessContract(address _addr) external onlyOwner {
     accessContractAddr = _addr;

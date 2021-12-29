@@ -76,8 +76,8 @@ contract CryptoidsHelper is EIP712, PauseOwnable {
     external
   {
     require(msg.sender == ceo);
-    IERC20(cac).transfer(owner(), _cacAmount);
-    IERC20(cgc).transfer(owner(), _cgcAmount);
+    IERC20(cac).safeTransfer(owner(), _cacAmount);
+    IERC20(cgc).safeTransfer(owner(), _cgcAmount);
   }
 
   function cost1(
@@ -163,7 +163,7 @@ contract CryptoidsHelper is EIP712, PauseOwnable {
       _genes2
     )));
     address signatory = ECDSA.recover(digest, v, r, s);
-    require(signatory == EVOLVE_ADMIN1 || signatory == EVOLVE_ADMIN2, "Signature valid.");
+    require(signatory == EVOLVE_ADMIN1 || signatory == EVOLVE_ADMIN2, "Signature INVALID.");
     _evolve(_petId, _genes1, _genes2);
     emit Evolve(_petId, signatory);
   }

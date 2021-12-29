@@ -3,14 +3,12 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
 contract Access is EIP712, Pausable, Ownable {
-  using SafeMath for uint256;
   using SafeERC20 for IERC20;
 
   uint256 public markStartTime;
@@ -69,7 +67,7 @@ contract Access is EIP712, Pausable, Ownable {
     internal 
   {
     if (markStartTime + Interval > block.timestamp) {
-      uint256 tempAmount = accumulatedAmout.add(_amount);
+      uint256 tempAmount = accumulatedAmout + _amount;
       require(tempAmount <= IntervalMaxWithdraw, "Access: transfer amount over.");
       IERC20(token).safeTransfer(_to, _amount);
       accumulatedAmout = tempAmount;
@@ -78,7 +76,6 @@ contract Access is EIP712, Pausable, Ownable {
       IERC20(token).safeTransfer(_to, _amount);
       accumulatedAmout = _amount;
       markStartTime = block.timestamp;
-      accumulatedAmout = _amount;
     }
   }
 
@@ -88,7 +85,7 @@ contract Access is EIP712, Pausable, Ownable {
     returns (uint256) 
   {
     if (markStartTime + Interval > block.timestamp) {
-      return IntervalMaxWithdraw.sub(accumulatedAmout);
+      return IntervalMaxWithdraw - accumulatedAmout;
     } else {
       return IntervalMaxWithdraw;
     }

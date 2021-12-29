@@ -35,7 +35,7 @@ contract CryptoidsCore is PauseOwnable, ERC721Enumerable, Dependency {
     whenSpawningAllowed(_to)
   {
     require(totalSupply() < maxSupply, "Cryptoids: Total supply reached");
-    _mint(_to, _petId);
+    _safeMint(_to, _petId);
     cps[_petId] = cryptoid(0, 0, block.timestamp);
     emit PAPASpawned(_petId, _to, _source);
   }
@@ -52,6 +52,7 @@ contract CryptoidsCore is PauseOwnable, ERC721Enumerable, Dependency {
   {
     require(_exists(_petId), "Cryptoids: Pet does not exists");
     cryptoid storage cp = cps[_petId];
+    require(cp.genes1 == 0 && cp.genes2 == 0, "Cryptoids: Already evolve");
     cp.genes1 = _genes1;
     cp.genes2 = _genes2;
     emit PAPAEvolved(_petId, _genes1, _genes2);

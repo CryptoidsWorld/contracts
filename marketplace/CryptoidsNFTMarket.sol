@@ -141,6 +141,7 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
         require(_WBNBAddress != address(0), "Operations: WBNB address cannot be zero");
         require(_minimumAskPrice > 0, "Operations: _minimumAskPrice must be > 0");
         require(_minimumAskPrice < _maximumAskPrice, "Operations: _minimumAskPrice < _maximumAskPrice");
+        require(_maximumAskPrice < type(uint128).max, "Operations: _maximumAskPrice > type(uint128).max");
 
         adminAddress = _adminAddress;
         treasuryAddress = _treasuryAddress;
@@ -194,7 +195,7 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
         _askTokenIds[_collection].remove(_tokenId);
 
         // Transfer the NFT back to the user
-        IERC721(_collection).transferFrom(address(this), address(msg.sender), _tokenId);
+        IERC721(_collection).safeTransferFrom(address(this), address(msg.sender), _tokenId);
 
         // Emit event
         emit AskCancel(_collection, msg.sender, _tokenId);
@@ -231,7 +232,7 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
         // Verify price is not too low/high
         require(_startingPrice >= minimumAskPrice && _startingPrice <= maximumAskPrice, "Order: startingPrice not within range");
 
-        require(_endingPrice >= minimumAskPrice && _endingPrice <= maximumAskPrice, "Order: startingPrice not within range");
+        require(_endingPrice >= minimumAskPrice && _endingPrice <= maximumAskPrice, "Order: endingPrice not within range");
 
         // Verify collection is accepted
         require(_collections[_collection].status == CollectionStatus.Open, "Collection: Not for listing");
@@ -267,7 +268,7 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
         uint256 _tradingFee
     ) external onlyAdmin {
         require(!_collectionAddressSet.contains(_collection), "Operations: Collection already listed");
-        require(IERC721(_collection).supportsInterface(0x80ac58cd), "Operations: Not ERC721");
+        require(IERC721(_collection).supportsInterface(type(IERC721).interfaceId), "Operations: Not ERC721");
 
         require(_tradingFee <= TOTAL_MAX_FEE, "Operations: Sum of fee must inferior to TOTAL_MAX_FEE");
 
@@ -331,6 +332,7 @@ contract CryptoidsNFTMarket is ERC721Holder, Ownable, ReentrancyGuard {
         onlyAdmin 
     {
         require(_minimumAskPrice < _maximumAskPrice, "Operations: _minimumAskPrice < _maximumAskPrice");
+        require(_maximumAskPrice < type(uint128).max, "Operations: _maximumAskPrice > type(uint128).max");
 
         minimumAskPrice = _minimumAskPrice;
         maximumAskPrice = _maximumAskPrice;
